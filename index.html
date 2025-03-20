@@ -7,171 +7,148 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            background-color: #f4f4f4;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
-        }
-
-        #login-container, #chat-container {
-            width: 400px;
-            padding: 20px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            display: flex;
             flex-direction: column;
-            align-items: center;
         }
-
-        input, button {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            outline: none;
+        #loginContainer, #chatContainer {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 300px;
+            text-align: center;
         }
-
-        button {
-            background: #007BFF;
-            color: white;
-            cursor: pointer;
+        #chatContainer {
+            display: none;
+            width: 350px;
         }
-
-        #chat-box {
-            width: 100%;
+        #messages {
             height: 300px;
             overflow-y: auto;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             padding: 10px;
-            margin: 10px 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message {
-            padding: 8px;
+            background: #fff;
             border-radius: 5px;
-            margin: 3px 0;
-            max-width: 80%;
         }
-
+        .message {
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
         .sent {
-            background: #007BFF;
+            background: #007bff;
             color: white;
             align-self: flex-end;
+            text-align: right;
         }
-
         .received {
-            background: #E5E5EA;
+            background: #e1e1e1;
             color: black;
             align-self: flex-start;
+        }
+        #messageInput {
+            width: 80%;
+            padding: 8px;
+        }
+        button {
+            padding: 8px;
+            margin-top: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-    <!-- 🔐 Login Form -->
-    <div id="login-container">
+    <!-- Login Form -->
+    <div id="loginContainer">
         <h2>Login to FrogChat</h2>
-        <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
+        <input type="text" id="username" placeholder="Username"><br><br>
+        <input type="password" id="password" placeholder="Password"><br><br>
         <button onclick="login()">Login</button>
-        <p id="login-error" style="color:red;"></p>
     </div>
 
-    <!-- 💬 Chat UI (Hidden Until Login) -->
-    <div id="chat-container" style="display: none;">
+    <!-- Chat Interface -->
+    <div id="chatContainer">
         <h2>FrogChat</h2>
-        <div id="chat-box"></div>
-        <input type="text" id="message-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Type a message...">
         <button onclick="sendMessage()">Send</button>
         <button onclick="logout()">Logout</button>
     </div>
 
     <script>
-        const backendURL = "https://chat-backend.onrender.com"; // Replace with your backend URL
+        const backendUrl = "https://frogchat-backend.onrender.com"; // Replace with your backend URL
 
-        function login() {
+        async function login() {
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
 
-            fetch(`${backendURL}/login`, {
+            const response = await fetch(`${backendUrl}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.token) {
-                    localStorage.setItem("token", data.token);
-                    showChat();
-                } else {
-                    document.getElementById("login-error").textContent = "Invalid credentials!";
-                }
             });
+
+            const data = await response.json();
+            if (response.ok) {
+                localStorage.setItem("token", data.token);
+                document.getElementById("loginContainer").style.display = "none";
+                document.getElementById("chatContainer").style.display = "block";
+                fetchMessages();
+            } else {
+                alert(data.message);
+            }
         }
 
-        function showChat() {
-            document.getElementById("login-container").style.display = "none";
-            document.getElementById("chat-container").style.display = "block";
-            loadMessages();
+        async function sendMessage() {
+            const message = document.getElementById("messageInput").value;
+            if (!message) return;
+
+            const token = localStorage.getItem("token");
+
+            await fetch(`${backendUrl}/send`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ message })
+            });
+
+            document.getElementById("messageInput").value = "";
+            fetchMessages();
+        }
+
+        async function fetchMessages() {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`${backendUrl}/messages`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+            const messagesDiv = document.getElementById("messages");
+            messagesDiv.innerHTML = "";
+
+            data.forEach(msg => {
+                const div = document.createElement("div");
+                div.classList.add("message", msg.sender === "You" ? "sent" : "received");
+                div.textContent = msg.sender + ": " + msg.text;
+                messagesDiv.appendChild(div);
+            });
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         function logout() {
             localStorage.removeItem("token");
-            location.reload();
-        }
-
-        async function loadMessages() {
-            const token = localStorage.getItem("token");
-            if (!token) return;
-
-            const response = await fetch(`${backendURL}/messages`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const messages = await response.json();
-            const chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML = messages.map(msg => `
-                <div class="message ${msg.sender === "You" ? "sent" : "received"}">
-                    <strong>${msg.sender}:</strong> ${msg.text}
-                </div>
-            `).join("");
-
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        async function sendMessage() {
-            const token = localStorage.getItem("token");
-            const messageInput = document.getElementById("message-input");
-            const text = messageInput.value.trim();
-            if (!text) return;
-
-            await fetch(`${backendURL}/messages`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json", 
-                    Authorization: `Bearer ${token}` 
-                },
-                body: JSON.stringify({ text })
-            });
-
-            messageInput.value = "";
-            loadMessages();
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
-        }
-
-        if (localStorage.getItem("token")) {
-            showChat();
+            document.getElementById("loginContainer").style.display = "block";
+            document.getElementById("chatContainer").style.display = "none";
         }
     </script>
 
