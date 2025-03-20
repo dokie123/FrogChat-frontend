@@ -13,53 +13,94 @@
             align-items: center;
             height: 100vh;
             flex-direction: column;
+            margin: 0;
         }
+
+        /* Login Box */
         #loginContainer, #chatContainer {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            width: 300px;
+            width: 350px;
             text-align: center;
         }
         #chatContainer {
             display: none;
-            width: 350px;
+            position: relative;
         }
+
+        /* Logout Button */
+        #logoutButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        #logoutButton:hover {
+            background: darkred;
+        }
+
+        /* Chat Messages */
         #messages {
             height: 300px;
             overflow-y: auto;
             border: 1px solid #ccc;
             padding: 10px;
-            background: #fff;
+            background: white;
             border-radius: 5px;
+            display: flex;
+            flex-direction: column;
         }
+
         .message {
-            padding: 8px 12px;
+            padding: 10px;
             margin: 5px;
-            border-radius: 10px;
-            max-width: 80%;
+            border-radius: 15px;
+            max-width: 75%;
             word-wrap: break-word;
+            font-size: 14px;
         }
+
         .sent {
-            background: #007bff;
+            background: #16CC16;
             color: white;
             align-self: flex-end;
             text-align: right;
         }
+
         .received {
             background: #e1e1e1;
             color: black;
             align-self: flex-start;
         }
+
+        /* Input and Buttons */
         #messageInput {
-            width: 80%;
+            width: 75%;
             padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
         button {
             padding: 8px;
             margin-top: 5px;
             cursor: pointer;
+            border-radius: 5px;
+            border: none;
+        }
+        #sendButton {
+            background: #16CC16;
+            color: white;
+        }
+        #sendButton:hover {
+            background: #139913;
         }
     </style>
 </head>
@@ -75,11 +116,11 @@
 
     <!-- Chat Interface -->
     <div id="chatContainer">
+        <button id="logoutButton" onclick="logout()">Logout</button>
         <h2>FrogChat</h2>
         <div id="messages"></div>
         <input type="text" id="messageInput" placeholder="Type a message...">
-        <button onclick="sendMessage()">Send</button>
-        <button onclick="logout()">Logout</button>
+        <button id="sendButton" onclick="sendMessage()">Send</button>
     </div>
 
     <script>
