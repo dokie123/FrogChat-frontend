@@ -15,134 +15,153 @@
             margin: 0;
         }
 
-        #chat-container {
+        #login-container, #chat-container {
             width: 400px;
-            height: 80vh;
+            padding: 20px;
             background: white;
             border-radius: 15px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            align-items: center;
         }
 
-        #chat-header {
-            background: #007BFF;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        #chat-box {
-            flex: 1;
+        input, button {
+            width: 100%;
             padding: 10px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            scrollbar-width: thin;
-        }
-
-        .message {
-            max-width: 70%;
-            padding: 10px;
-            border-radius: 15px;
-            font-size: 14px;
-            word-wrap: break-word;
-        }
-
-        .message.sent {
-            background-color: #007BFF;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 5px;
-        }
-
-        .message.received {
-            background-color: #E5E5EA;
-            color: black;
-            align-self: flex-start;
-            border-bottom-left-radius: 5px;
-        }
-
-        #input-container {
-            display: flex;
-            padding: 10px;
-            border-top: 1px solid #ccc;
-            background: #fff;
-        }
-
-        #message-input {
-            flex: 1;
-            padding: 10px;
+            margin: 5px 0;
             border: 1px solid #ccc;
-            border-radius: 20px;
+            border-radius: 5px;
             outline: none;
         }
 
         button {
-            margin-left: 10px;
-            padding: 10px 15px;
-            border: none;
             background: #007BFF;
             color: white;
-            border-radius: 50%;
             cursor: pointer;
-            font-size: 16px;
         }
 
-        button:hover {
-            background: #0056b3;
+        #chat-box {
+            width: 100%;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 8px;
+            border-radius: 5px;
+            margin: 3px 0;
+            max-width: 80%;
+        }
+
+        .sent {
+            background: #007BFF;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .received {
+            background: #E5E5EA;
+            color: black;
+            align-self: flex-start;
         }
     </style>
 </head>
 <body>
 
-    <div id="chat-container">
-        <div id="chat-header">FrogChat</div>
+    <!-- 🔐 Login Form -->
+    <div id="login-container">
+        <h2>Login to FrogChat</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p id="login-error" style="color:red;"></p>
+    </div>
+
+    <!-- 💬 Chat UI (Hidden Until Login) -->
+    <div id="chat-container" style="display: none;">
+        <h2>FrogChat</h2>
         <div id="chat-box"></div>
-        <div id="input-container">
-            <input type="text" id="message-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">➤</button>
-        </div>
+        <input type="text" id="message-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="logout()">Logout</button>
     </div>
 
     <script>
-        const backendURL = "https://chat-backend.onrender.com"; // Replace with your actual backend URL
+        const backendURL = "https://chat-backend.onrender.com"; // Replace with your backend URL
+
+        function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            fetch(`${backendURL}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem("token", data.token);
+                    showChat();
+                } else {
+                    document.getElementById("login-error").textContent = "Invalid credentials!";
+                }
+            });
+        }
+
+        function showChat() {
+            document.getElementById("login-container").style.display = "none";
+            document.getElementById("chat-container").style.display = "block";
+            loadMessages();
+        }
+
+        function logout() {
+            localStorage.removeItem("token");
+            location.reload();
+        }
 
         async function loadMessages() {
-            const response = await fetch(`${backendURL}/messages`);
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const response = await fetch(`${backendURL}/messages`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
             const messages = await response.json();
             const chatBox = document.getElementById("chat-box");
             chatBox.innerHTML = messages.map(msg => `
-                <div class="message received">${msg}</div>
+                <div class="message ${msg.sender === "You" ? "sent" : "received"}">
+                    <strong>${msg.sender}:</strong> ${msg.text}
+                </div>
             `).join("");
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         async function sendMessage() {
+            const token = localStorage.getItem("token");
             const messageInput = document.getElementById("message-input");
             const text = messageInput.value.trim();
             if (!text) return;
 
-            // Append to chat as a sent message
-            const chatBox = document.getElementById("chat-box");
-            const newMessage = document.createElement("div");
-            newMessage.classList.add("message", "sent");
-            newMessage.textContent = text;
-            chatBox.appendChild(newMessage);
-            chatBox.scrollTop = chatBox.scrollHeight;
-
             await fetch(`${backendURL}/messages`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json", 
+                    Authorization: `Bearer ${token}` 
+                },
                 body: JSON.stringify({ text })
             });
 
             messageInput.value = "";
-            setTimeout(loadMessages, 500); // Slight delay to sync messages
+            loadMessages();
         }
 
         function handleKeyPress(event) {
@@ -151,8 +170,9 @@
             }
         }
 
-        setInterval(loadMessages, 2000);
-        loadMessages();
+        if (localStorage.getItem("token")) {
+            showChat();
+        }
     </script>
 
 </body>
