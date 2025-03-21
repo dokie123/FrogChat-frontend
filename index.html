@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FrogChat</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css"
 </head>
 <body>
 
@@ -12,7 +12,21 @@
     <div id="loginContainer">
         <h2>Login to FrogChat</h2>
         <input type="text" id="username" placeholder="Username"><br><br>
-        <input type="password" id="password" placeholder="Password"><br><br>
+        
+        <div class="password-container">
+            <input type="password" id="password" placeholder="Password">
+            <button type="button" id="togglePassword">
+                <svg id="eyeOpen" class="eye-icon" viewBox="0 0 24 24">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12a4.5 4.5 0 1 1 4.5-4.5A4.51 4.51 0 0 1 12 16.5z"></path>
+                    <circle cx="12" cy="12" r="2.5"></circle>
+                </svg>
+                <svg id="eyeClosed" class="eye-icon hidden" viewBox="0 0 24 24">
+                    <path d="M12 4.5c-4.98 0-9.25 3.11-11 7.5 1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM3.6 12c1.62-3.22 5.22-5.5 8.4-5.5s6.78 2.28 8.4 5.5c-1.62 3.22-5.22 5.5-8.4 5.5s-6.78-2.28-8.4-5.5zm5.9 0a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <br><br>
         <button onclick="login()">Login</button>
         <br><a href="mailto:ifesser001@stapul.k12.mn.us">reset password</a>
     </div>
@@ -75,17 +89,31 @@
             const response = await fetch(`/messages?since=${lastReceived}`);
             const data = await response.json();
             lastReceived = data.latestTimestamp; // Update last received timestamp
-
-            // Append new messages to the chat
         }    
         setInterval(fetchMessages, 1000); // Poll every second
-
 
         function logout() {
             localStorage.removeItem("token");
             document.getElementById("loginContainer").style.display = "block";
             document.getElementById("chatContainer").style.display = "none";
         }
+
+        // Password Show/Hide Toggle
+        document.getElementById("togglePassword").addEventListener("click", function() {
+            let passwordField = document.getElementById("password");
+            let eyeOpen = document.getElementById("eyeOpen");
+            let eyeClosed = document.getElementById("eyeClosed");
+
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                eyeOpen.classList.add("hidden");
+                eyeClosed.classList.remove("hidden");
+            } else {
+                passwordField.type = "password";
+                eyeOpen.classList.remove("hidden");
+                eyeClosed.classList.add("hidden");
+            }
+        });
     </script>
 
 </body>
