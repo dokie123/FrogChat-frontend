@@ -21,6 +21,11 @@ body {
     border: 1.5px solid #16cc16
 }
 
+#loginContainer a {
+    font-size: 0.7em;
+    margin: 20px;
+}
+
 #chatContainer {
     display: none;
     position: relative;
