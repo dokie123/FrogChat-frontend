@@ -41,7 +41,8 @@
     </div>
 
     <script>
-        const backendUrl = "https://frogchat-backend.onrender.com"; // Replace with your backend URL
+        const backendUrl = "https://frogchat-backend.onrender.com";
+        let currentUser = "";
 
         async function login() {
             const username = document.getElementById("username").value;
@@ -56,8 +57,11 @@
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem("token", data.token);
+                localStorage.setItem("username", username);
+                currentUser = username;
                 document.getElementById("loginContainer").style.display = "none";
                 document.getElementById("chatContainer").style.display = "block";
+
                 fetchMessages();
             } else {
                 alert(data.message);
@@ -83,35 +87,65 @@
             await fetchMessages();
         }
 
-        let lastReceived = 0;
-
         async function fetchMessages() {
-            const token = localStorage.getItem("token");
-            if (!token) return;
-
-            const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
+            const response = await fetch(`${backendUrl}/messages`);
             const data = await response.json();
+            const messagesDiv = document.getElementById("messages");
+            messagesDiv.innerHTML = "";
 
-            if (data.messages.length) {
-                lastReceived = data.latestTimestamp;
-                const messagesDiv = document.getElementById("messages");
+            data.messages.forEach(msg => {
+                let messageElement = document.createElement("p");
+                messageElement.textContent = `${msg.sender}: ${msg.text}`;
 
-                data.messages.forEach(msg => {
-                    let p = document.createElement("p");
-                    p.textContent = `${msg.sender}: ${msg.text}`;
-                    messagesDiv.appendChild(p);
-                });
+                if (currentUser === "Admin") {
+                    let deleteButton = document.createElement("button");
+                    deleteButton.textContent = "❌";
+                    deleteButton.onclick = () => deleteMessage(msg.id);
+                    messageElement.appendChild(deleteButton);
+                }
 
-                messagesDiv.scrollTop = messagesDiv.scrollHeight; 
-            }
+                messagesDiv.appendChild(messageElement);
+            });
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-        setInterval(fetchMessages, 1000);
+
+        async function deleteMessage(messageId) {
+            const token = localStorage.getItem("token");
+            await fetch(`${backendUrl}/deleteMessage`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ id: messageId })
+            });
+            fetchMessages();
+        }
 
         function logout() {
             localStorage.removeItem("token");
+            localStorage.removeItem("username");
             document.getElementById("loginContainer").style.display = "block";
             document.getElementById("chatContainer").style.display = "none";
         }
+
+        // Password Show/Hide Toggle
+        document.getElementById("togglePassword").addEventListener("click", function() {
+            let passwordField = document.getElementById("password");
+            let eyeOpen = document.getElementById("eyeOpen");
+            let eyeClosed = document.getElementById("eyeClosed");
+
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                eyeOpen.classList.add("hidden");
+                eyeClosed.classList.remove("hidden");
+            } else {
+                passwordField.type = "password";
+                eyeOpen.classList.remove("hidden");
+                eyeClosed.classList.add("hidden");
+            }
+        });
     </script>
 
 </body>
