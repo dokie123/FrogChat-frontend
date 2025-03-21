@@ -21,7 +21,7 @@
                     <circle cx="12" cy="12" r="2.5"></circle>
                 </svg>
                 <svg id="eyeClosed" class="eye-icon hidden" viewBox="0 0 24 24">
-                    <path d="M12 4.5c-4.98 0-9.25 3.11-11 7.5 1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM3.6 12c1.62-3.22 5.22-5.5 8.4-5.5s6.78 2.28 8.4 5.5c-1.62 3.22-5.22 5.5-8.4 5.5s-6.78-2.28-8.4-5.5zm5.9 0a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0z"></path>
+                    <path d="M12 4.5c-4.98 0-9.25 3.11-11 7.5 1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM3.6 12c1.62-3.22 5.22-5.5 8.4-5.5s6.78 2.28 8.4 5.5c-1.62 3.22-5.22 5.5-8.4 5.5zm5.9 0a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0z"></path>
                 </svg>
             </button>
         </div>
@@ -41,8 +41,7 @@
     </div>
 
     <script>
-        const backendUrl = "https://frogchat-backend.onrender.com";
-        let currentUser = "";
+        const backendUrl = "https://frogchat-backend.onrender.com"; // Replace with your backend URL
 
         async function login() {
             const username = document.getElementById("username").value;
@@ -57,11 +56,8 @@
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("username", username);
-                currentUser = username;
                 document.getElementById("loginContainer").style.display = "none";
                 document.getElementById("chatContainer").style.display = "block";
-
                 fetchMessages();
             } else {
                 alert(data.message);
@@ -84,68 +80,37 @@
             });
 
             document.getElementById("messageInput").value = "";
-            await fetchMessages();
-        }
-
-        async function fetchMessages() {
-            const response = await fetch(`${backendUrl}/messages`);
-            const data = await response.json();
-            const messagesDiv = document.getElementById("messages");
-            messagesDiv.innerHTML = "";
-
-            data.messages.forEach(msg => {
-                let messageElement = document.createElement("p");
-                messageElement.textContent = `${msg.sender}: ${msg.text}`;
-
-                if (currentUser === "Admin") {
-                    let deleteButton = document.createElement("button");
-                    deleteButton.textContent = "❌";
-                    deleteButton.onclick = () => deleteMessage(msg.id);
-                    messageElement.appendChild(deleteButton);
-                }
-
-                messagesDiv.appendChild(messageElement);
-            });
-
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        async function deleteMessage(messageId) {
-            const token = localStorage.getItem("token");
-            await fetch(`${backendUrl}/deleteMessage`, {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ id: messageId })
-            });
             fetchMessages();
         }
 
+        let lastReceived = 0;
+
+        async function fetchMessages() {
+            const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
+            const data = await response.json();
+
+            if (data.messages.length > 0) {
+                lastReceived = data.latestTimestamp;
+                const messagesDiv = document.getElementById("messages");
+
+                data.messages.forEach(msg => {
+                    const messageElement = document.createElement("div");
+                    messageElement.classList.add("message");
+                    messageElement.textContent = `${msg.sender}: ${msg.text}`;
+                    messagesDiv.appendChild(messageElement);
+                });
+
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        }
+
+        setInterval(fetchMessages, 1000); // Poll for messages every second
+
         function logout() {
             localStorage.removeItem("token");
-            localStorage.removeItem("username");
             document.getElementById("loginContainer").style.display = "block";
             document.getElementById("chatContainer").style.display = "none";
         }
-
-        // Password Show/Hide Toggle
-        document.getElementById("togglePassword").addEventListener("click", function() {
-            let passwordField = document.getElementById("password");
-            let eyeOpen = document.getElementById("eyeOpen");
-            let eyeClosed = document.getElementById("eyeClosed");
-
-            if (passwordField.type === "password") {
-                passwordField.type = "text";
-                eyeOpen.classList.add("hidden");
-                eyeClosed.classList.remove("hidden");
-            } else {
-                passwordField.type = "password";
-                eyeOpen.classList.remove("hidden");
-                eyeClosed.classList.add("hidden");
-            }
-        });
     </script>
 
 </body>
