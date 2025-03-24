@@ -101,7 +101,7 @@
                 if (payload.username === "Admin") {
                     let deleteBtn = document.createElement("button");
                     deleteBtn.innerText = "❌";
-                    deleteBtn.onclick = () => deleteMessage(msg.id);
+                    deleteBtn.onclick = () => deleteMessage(msg.id);  // Pass the correct message id
                     messageElement.appendChild(deleteBtn);
                 }
             }
@@ -124,12 +124,13 @@
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
             },
-            body: JSON.stringify({ id: messageId })
+            body: JSON.stringify({ id: messageId })  // Send the message ID to delete
         });
 
         const data = await response.json();
         if (response.ok) {
-            fetchMessages(); // Re-fetch the messages after successful deletion
+            alert("Message deleted successfully!");
+            fetchMessages();  // Re-fetch the messages after successful deletion
         } else {
             alert(data.message); // Show error if the deletion fails
         }
@@ -143,6 +144,7 @@
 
     setInterval(fetchMessages, 1000);  // Continues fetching new messages
 </script>
+
 
     
 </body>
