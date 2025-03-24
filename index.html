@@ -31,7 +31,7 @@
     </div>
 
     <!-- Chat Interface -->
-    <div id="chatContainer" style="display:none;">
+    <div id="chatContainer">
         <button id="logoutButton" onclick="logout()">Logout</button>
         <h2>FrogChat</h2>
         <div id="messages"></div>
@@ -40,112 +40,121 @@
     </div>
 
     <script>
-    const backendUrl = "https://frogchat-backend.onrender.com";
-    let lastReceived = 0;
+        const backendUrl = "https://frogchat-backend.onrender.com";
+        let lastReceived = 0;
 
-    async function login() {
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
+        async function login() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
 
-        const response = await fetch(`${backendUrl}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
-        });
+            const response = await fetch(`${backendUrl}/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
 
-        const data = await response.json();
-        if (response.ok) {
-            localStorage.setItem("token", data.token);
-            document.getElementById("loginContainer").style.display = "none";
-            document.getElementById("chatContainer").style.display = "block";
-            fetchMessages();
-        } else {
-            alert(data.message);
+            const data = await response.json();
+            if (response.ok) {
+                localStorage.setItem("token", data.token);
+                document.getElementById("loginContainer").style.display = "none";
+                document.getElementById("chatContainer").style.display = "block";
+                fetchMessages();
+            } else {
+                alert(data.message);
+            }
         }
-    }
 
-    async function sendMessage() {
-        const message = document.getElementById("messageInput").value;
-        if (!message) return;
-
-        const token = localStorage.getItem("token");
-
-        await fetch(`${backendUrl}/send`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ message })
-        });
-
-        document.getElementById("messageInput").value = "";
-        fetchMessages();
-    }
-
-    async function fetchMessages() {
-        const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
-        const data = await response.json();
-        lastReceived = data.latestTimestamp;
-
-        const messagesDiv = document.getElementById("messages");
-
-        // Only append new messages
-        data.messages.forEach((msg) => {
-            let messageElement = document.createElement("div");
-            messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+        async function sendMessage() {
+            const message = document.getElementById("messageInput").value;
+            if (!message) return;
 
             const token = localStorage.getItem("token");
-            if (token) {
-                const payload = JSON.parse(atob(token.split(".")[1]));
-                if (payload.username === "Admin") {
-                    let deleteBtn = document.createElement("button");
-                    deleteBtn.innerText = "❌";
-                    deleteBtn.onclick = () => deleteMessage(msg.id);  // Pass the correct message id
-                    messageElement.appendChild(deleteBtn);
+
+            await fetch(`${backendUrl}/send`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ message })
+            });
+
+            document.getElementById("messageInput").value = "";
+            fetchMessages();
+        }
+
+        async function fetchMessages() {
+            const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
+            const data = await response.json();
+            lastReceived = data.latestTimestamp;
+
+            const messagesDiv = document.getElementById("messages");
+
+            // Clear previous messages to avoid duplication
+            messagesDiv.innerHTML = '';
+
+            data.messages.forEach((msg) => {
+                let messageElement = document.createElement("div");
+                messageElement.id = `message-${msg.id}`;  // Assign a unique ID to each message div
+
+                messageElement.innerHTML = `
+                    <strong>${msg.sender}:</strong> ${msg.text} 
+                    <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>
+                `;
+
+                // Add a delete button if the user is an admin
+                const token = localStorage.getItem("token");
+                if (token) {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    if (payload.username === "Admin") {
+                        let deleteBtn = document.createElement("button");
+                        deleteBtn.innerText = "❌";
+                        deleteBtn.onclick = () => deleteMessage(msg.id, messageElement);  // Pass message ID and element to delete
+                        messageElement.appendChild(deleteBtn);
+                    }
                 }
+
+                messagesDiv.appendChild(messageElement);
+            });
+        }
+
+        async function deleteMessage(messageId, messageElement) {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                alert("Unauthorized request. Please log in.");
+                return;
             }
 
-            messagesDiv.appendChild(messageElement);
-        });
-    }
+            // Call the backend to delete the message from the server
+            const response = await fetch(`${backendUrl}/delete`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ id: messageId })  // Send the message ID to delete
+            });
 
-    async function deleteMessage(messageId) {
-        const token = localStorage.getItem("token");
+            const data = await response.json();
+            if (response.ok) {
+                alert("Message deleted successfully!");
 
-        if (!token) {
-            alert("Unauthorized request. Please log in.");
-            return;
+                // Remove the message from the UI by deleting the div element
+                messageElement.remove();
+            } else {
+                alert(data.message);  // Show error if deletion fails
+            }
         }
 
-        const response = await fetch(`${backendUrl}/delete`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ id: messageId })  // Send the message ID to delete
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            alert("Message deleted successfully!");
-            fetchMessages();  // Re-fetch the messages after successful deletion
-        } else {
-            alert(data.message); // Show error if the deletion fails
+        function logout() {
+            localStorage.removeItem("token");
+            document.getElementById("loginContainer").style.display = "block";
+            document.getElementById("chatContainer").style.display = "none";
         }
-    }
 
-    function logout() {
-        localStorage.removeItem("token");
-        document.getElementById("loginContainer").style.display = "block";
-        document.getElementById("chatContainer").style.display = "none";
-    }
+        setInterval(fetchMessages, 1000);
+    </script>
 
-    setInterval(fetchMessages, 1000);  // Continues fetching new messages
-</script>
-
-
-    
 </body>
 </html>
