@@ -89,23 +89,27 @@
             lastReceived = data.latestTimestamp;
 
             const messagesDiv = document.getElementById("messages");
+            const existingMessageIds = new Set([...messagesDiv.children].map(msg => msg.dataset.id));
 
-            data.messages.forEach((msg, index) => {
-                let messageElement = document.createElement("div");
-                messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+            data.messages.forEach((msg) => {
+                if (!existingMessageIds.has(msg.id)) { // Only add new messages
+                    let messageElement = document.createElement("div");
+                    messageElement.dataset.id = msg.id; // Store message ID to avoid duplication
+                    messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
 
-                const token = localStorage.getItem("token");
-                if (token) {
-                    const payload = JSON.parse(atob(token.split(".")[1]));
-                    if (payload.username === "Admin") {
-                        let deleteBtn = document.createElement("button");
-                        deleteBtn.innerText = "❌";
-                        deleteBtn.onclick = () => deleteMessage(index);
-                        messageElement.appendChild(deleteBtn);
+                    const token = localStorage.getItem("token");
+                    if (token) {
+                        const payload = JSON.parse(atob(token.split(".")[1]));
+                        if (payload.username === "Admin") {
+                            let deleteBtn = document.createElement("button");
+                            deleteBtn.innerText = "❌";
+                            deleteBtn.onclick = () => deleteMessage(msg.id);
+                            messageElement.appendChild(deleteBtn);
+                        }
                     }
-                }
 
-                messagesDiv.appendChild(messageElement);
+                    messagesDiv.appendChild(messageElement);
+                }
             });
         }
 
