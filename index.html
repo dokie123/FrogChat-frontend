@@ -89,7 +89,6 @@
             lastReceived = data.latestTimestamp;
 
             const messagesDiv = document.getElementById("messages");
-            messagesDiv.innerHTML = "";
 
             data.messages.forEach((msg, index) => {
                 let messageElement = document.createElement("div");
