@@ -139,8 +139,13 @@
         function logout() {
             localStorage.removeItem("token");
             document.getElementById("loginContainer").style.display = "block";
-            document.getElementById("chatContainer").style.display = "none";
-        }
+    document.getElementById("chatContainer").style.display = "none";
+    
+    // Clear the username and password fields
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+}
+
 
         setInterval(fetchMessages, 1000);
     </script>
