@@ -94,6 +94,16 @@ body {
     flex-direction: column;
 }
 
+#messages p {
+  background-color: #1af41a;
+  display: inline-block;
+  max-width: 70%;
+  padding: 3%;
+  border-radius: 15px;
+  margin: 0.7% auto;
+  word-wrap: break-word;
+}
+
 .message {
     padding: 0.8em;
     margin: 0.5em;
