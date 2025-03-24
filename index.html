@@ -40,97 +40,105 @@
     </div>
 
     <script>
-        const backendUrl = "https://frogchat-backend.onrender.com";
-        let lastReceived = 0;
+    const backendUrl = "https://frogchat-backend.onrender.com";
+    let lastReceived = 0;
 
-        async function login() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
+    async function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
 
-            const response = await fetch(`${backendUrl}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
-            });
+        const response = await fetch(`${backendUrl}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
 
-            const data = await response.json();
-            if (response.ok) {
-                localStorage.setItem("token", data.token);
-                document.getElementById("loginContainer").style.display = "none";
-                document.getElementById("chatContainer").style.display = "block";
-                fetchMessages();
-            } else {
-                alert(data.message);
-            }
-        }
-
-        async function sendMessage() {
-            const message = document.getElementById("messageInput").value;
-            if (!message) return;
-
-            const token = localStorage.getItem("token");
-
-            await fetch(`${backendUrl}/send`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ message })
-            });
-
-            document.getElementById("messageInput").value = "";
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem("token", data.token);
+            document.getElementById("loginContainer").style.display = "none";
+            document.getElementById("chatContainer").style.display = "block";
             fetchMessages();
+        } else {
+            alert(data.message);
         }
+    }
 
-        async function fetchMessages() {
-            const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
-            const data = await response.json();
-            lastReceived = data.latestTimestamp;
+    async function sendMessage() {
+        const message = document.getElementById("messageInput").value;
+        if (!message) return;
 
-            const messagesDiv = document.getElementById("messages");
-            const existingMessageIds = new Set([...messagesDiv.children].map(msg => msg.dataset.id));
+        const token = localStorage.getItem("token");
 
-            data.messages.forEach((msg) => {
-                if (!existingMessageIds.has(msg.id)) { // Only add new messages
-                    let messageElement = document.createElement("div");
-                    messageElement.dataset.id = msg.id; // Store message ID to avoid duplication
-                    messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+        await fetch(`${backendUrl}/send`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ message })
+        });
 
-                    const token = localStorage.getItem("token");
-                    if (token) {
-                        const payload = JSON.parse(atob(token.split(".")[1]));
-                        if (payload.username === "Admin") {
-                            let deleteBtn = document.createElement("button");
-                            deleteBtn.innerText = "❌";
-                            deleteBtn.onclick = () => deleteMessage(msg.id);
-                            messageElement.appendChild(deleteBtn);
-                        }
-                    }
+        document.getElementById("messageInput").value = "";
+        fetchMessages();
+    }
 
-                    messagesDiv.appendChild(messageElement);
-                }
-            });
-        }
+    async function fetchMessages() {
+        const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
+        const data = await response.json();
+        lastReceived = data.latestTimestamp;
 
-        async function deleteMessage(messageId) {
+        const messagesDiv = document.getElementById("messages");
+
+        data.messages.forEach((msg) => {
+            let messageElement = document.createElement("div");
+            messageElement.dataset.id = msg.id; // Set the unique ID as a data attribute
+
+            messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+
             const token = localStorage.getItem("token");
-            await fetch(`${backendUrl}/delete/${messageId}`, {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+            if (token) {
+                const payload = JSON.parse(atob(token.split(".")[1]));
+                if (payload.username === "Admin") {
+                    let deleteBtn = document.createElement("button");
+                    deleteBtn.innerText = "❌";
+                    deleteBtn.onclick = () => deleteMessage(msg.id); // Pass the message id here
+                    messageElement.appendChild(deleteBtn);
+                }
+            }
 
-            fetchMessages(); // Refresh messages after deletion
+            messagesDiv.appendChild(messageElement);
+        });
+    }
+
+    async function deleteMessage(messageId) {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${backendUrl}/delete`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ id: messageId }) // Send the message ID
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            fetchMessages(); // Re-fetch the messages after successful deletion
+        } else {
+            alert(data.message); // Show error if the deletion fails
         }
+    }
 
-        function logout() {
-            localStorage.removeItem("token");
-            document.getElementById("loginContainer").style.display = "block";
-            document.getElementById("chatContainer").style.display = "none";
-        }
+    function logout() {
+        localStorage.removeItem("token");
+        document.getElementById("loginContainer").style.display = "block";
+        document.getElementById("chatContainer").style.display = "none";
+    }
 
-        setInterval(fetchMessages, 1000);
-    </script>
+    setInterval(fetchMessages, 1000); // Poll for new messages every second
+</script>
+
 
 </body>
 </html>
