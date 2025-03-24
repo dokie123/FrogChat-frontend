@@ -89,9 +89,7 @@
             lastReceived = data.latestTimestamp;
 
             const messagesDiv = document.getElementById("messages");
-
-            // Clear current messages to avoid duplicates
-            messagesDiv.innerHTML = '';
+            messagesDiv.innerHTML = ''; // Clear messages container
 
             data.messages.forEach((msg) => {
                 let messageElement = document.createElement("div");
@@ -131,8 +129,7 @@
 
             const data = await response.json();
             if (response.ok) {
-                // If successful, just fetch the messages again to refresh the list
-                fetchMessages();
+                fetchMessages(); // Refresh the list of messages after deleting
             } else {
                 alert(data.message);
             }
@@ -144,7 +141,7 @@
             document.getElementById("chatContainer").style.display = "none";
         }
 
-        setInterval(fetchMessages, 1000);
+        setInterval(fetchMessages, 1000);  // Polling for new messages every second
     </script>
 
 </body>
