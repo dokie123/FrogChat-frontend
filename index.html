@@ -98,7 +98,7 @@
             // Render the cached messages
             messageCache.forEach((msg) => {
                 let messageElement = document.createElement("div");
-                messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+                messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text}`;
                 
                 const token = localStorage.getItem("token");
                 if (token) {
@@ -129,7 +129,6 @@
 
             const data = await response.json();
             if (response.ok) {
-                alert(data.message); // Notify success
                 messageCache = messageCache.filter(msg => msg.id !== messageId); // Remove the deleted message from cache
                 fetchMessages(); // Refresh messages after deletion
             } else {
