@@ -112,23 +112,32 @@
     }
 
     async function deleteMessage(messageId) {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${backendUrl}/delete`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ id: messageId }) // Send the message ID
-        });
+    const token = localStorage.getItem("token");
 
-        const data = await response.json();
-        if (response.ok) {
-            fetchMessages(); // Re-fetch the messages after successful deletion
-        } else {
-            alert(data.message); // Show error if the deletion fails
-        }
+    if (!token) {
+        alert("Unauthorized request. Please log in.");
+        return;
     }
+
+    console.log("Deleting message with ID:", messageId); // Add this log to verify the ID
+
+    const response = await fetch(`${backendUrl}/delete`, {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: messageId }) // Ensure message ID is correctly sent
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+        fetchMessages(); // Re-fetch the messages after successful deletion
+    } else {
+        alert(data.message); // Show error if the deletion fails
+    }
+}
+
 
     function logout() {
         localStorage.removeItem("token");
