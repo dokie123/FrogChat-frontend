@@ -42,6 +42,7 @@
     <script>
         const backendUrl = "https://frogchat-backend.onrender.com";
         let lastReceived = 0;
+        let messageCache = []; // Keep track of the messages to avoid overwriting
 
         async function login() {
             const username = document.getElementById("username").value;
@@ -88,25 +89,24 @@
             const data = await response.json();
             lastReceived = data.latestTimestamp;
 
+            // Cache the new messages instead of overwriting
+            messageCache = [...messageCache, ...data.messages]; // Merge new messages with the cached ones
+
             const messagesDiv = document.getElementById("messages");
-            messagesDiv.innerHTML = ''; // Clear messages container
+            messagesDiv.innerHTML = ''; // Clear the message container
 
-            data.messages.forEach((msg) => {
+            // Render the cached messages
+            messageCache.forEach((msg) => {
                 let messageElement = document.createElement("div");
-                messageElement.classList.add("message");
-                messageElement.setAttribute("data-id", msg.id); // Assign a data-id to the div
-
-                messageElement.innerHTML = `
-                    <strong>${msg.sender}:</strong> ${msg.text} 
-                    <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
-
+                messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+                
                 const token = localStorage.getItem("token");
                 if (token) {
                     const payload = JSON.parse(atob(token.split(".")[1]));
                     if (payload.username === "Admin") {
                         let deleteBtn = document.createElement("button");
                         deleteBtn.innerText = "❌";
-                        deleteBtn.onclick = () => deleteMessage(msg.id); // Pass message id directly
+                        deleteBtn.onclick = () => deleteMessage(msg.id);  // Pass the message id
                         messageElement.appendChild(deleteBtn);
                     }
                 }
@@ -124,14 +124,16 @@
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ id: messageId })
+                body: JSON.stringify({ id: messageId }) // Send the message id to delete
             });
 
             const data = await response.json();
             if (response.ok) {
-                fetchMessages(); // Refresh the list of messages after deleting
+                alert(data.message); // Notify success
+                messageCache = messageCache.filter(msg => msg.id !== messageId); // Remove the deleted message from cache
+                fetchMessages(); // Refresh messages after deletion
             } else {
-                alert(data.message);
+                alert(data.message); // Notify error
             }
         }
 
@@ -141,7 +143,7 @@
             document.getElementById("chatContainer").style.display = "none";
         }
 
-        setInterval(fetchMessages, 1000);  // Polling for new messages every second
+        setInterval(fetchMessages, 1000);
     </script>
 
 </body>
