@@ -15,6 +15,14 @@
         
         <div class="password-container">
             <input type="password" id="password" placeholder="Password">
+            <button type="button" id="togglePassword">
+                <svg id="eyeOpen" class="eye-icon" viewBox="0 0 24 24">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12a4.5 4.5 0 1 1 4.5-4.5A4.51 4.51 0 0 1 12 16.5z"></path>
+                </svg>
+                <svg id="eyeClosed" class="eye-icon hidden" viewBox="0 0 24 24">
+                    <path d="M12 4.5c-4.98 0-9.25 3.11-11 7.5 1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z"></path>
+                </svg>
+            </button>
         </div>
 
         <br><br>
@@ -81,42 +89,24 @@
             lastReceived = data.latestTimestamp;
 
             const messagesDiv = document.getElementById("messages");
-            const existingMessageIds = new Set([...messagesDiv.children].map(msg => msg.dataset.id));
 
-            data.messages.forEach((msg) => {
-                if (!existingMessageIds.has(msg.id)) { // Only add new messages
-                    let messageElement = document.createElement("div");
-                    messageElement.dataset.id = msg.id;
-                    messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+            data.messages.forEach((msg, index) => {
+                let messageElement = document.createElement("div");
+                messageElement.innerHTML = `<strong>${msg.sender}:</strong> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
 
-                    const token = localStorage.getItem("token");
-                    if (token) {
-                        const payload = JSON.parse(atob(token.split(".")[1]));
-                        if (payload.username === "Admin") {
-                            let deleteBtn = document.createElement("button");
-                            deleteBtn.innerText = "❌";
-                            deleteBtn.onclick = () => deleteMessage(msg.id);
-                            messageElement.appendChild(deleteBtn);
-                        }
+                const token = localStorage.getItem("token");
+                if (token) {
+                    const payload = JSON.parse(atob(token.split(".")[1]));
+                    if (payload.username === "Admin") {
+                        let deleteBtn = document.createElement("button");
+                        deleteBtn.innerText = "❌";
+                        deleteBtn.onclick = () => deleteMessage(index);
+                        messageElement.appendChild(deleteBtn);
                     }
-
-                    messagesDiv.appendChild(messageElement);
                 }
-            });
-        }
 
-        async function deleteMessage(messageId) {
-            const token = localStorage.getItem("token");
-            await fetch(`${backendUrl}/delete`, {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ id: messageId })
+                messagesDiv.appendChild(messageElement);
             });
-
-            fetchMessages(); // Refresh messages after deletion
         }
 
         function logout() {
