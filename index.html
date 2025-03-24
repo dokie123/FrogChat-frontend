@@ -108,7 +108,7 @@
                     if (payload.username === "Admin") {
                         let deleteBtn = document.createElement("button");
                         deleteBtn.innerText = "❌";
-                        deleteBtn.onclick = () => deleteMessage(msg.id, messageElement);
+                        deleteBtn.onclick = () => deleteMessage(msg.id); // Pass message id directly
                         messageElement.appendChild(deleteBtn);
                     }
                 }
@@ -117,7 +117,7 @@
             });
         }
 
-        async function deleteMessage(messageId, messageElement) {
+        async function deleteMessage(messageId) {
             const token = localStorage.getItem("token");
 
             const response = await fetch(`${backendUrl}/delete`, {
@@ -131,8 +131,8 @@
 
             const data = await response.json();
             if (response.ok) {
-                // Remove the message visually by deleting its div
-                messageElement.remove();
+                // If successful, just fetch the messages again to refresh the list
+                fetchMessages();
             } else {
                 alert(data.message);
             }
