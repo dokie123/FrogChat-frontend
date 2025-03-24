@@ -94,7 +94,7 @@ body {
     flex-direction: column;
 }
 
-#messages p {
+#messages div {
   background-color: #1af41a;
   display: inline-block;
   max-width: 70%;
