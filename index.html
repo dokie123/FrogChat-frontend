@@ -78,16 +78,15 @@
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ message })
-            });
+            });https://frogchats.netlify.app/
 
             document.getElementById("messageInput").value = "";
-            fetchMessages();
         }
 
         async function fetchMessages() {
             const response = await fetch(`${backendUrl}/messages?since=${lastReceived}`);
             const data = await response.json();
-            lastReceived = data.latestTimestamp;
+            lastReceived = data.latestTimestamp + 1;
 
             // Cache the new messages instead of overwriting
             messageCache = [...messageCache, ...data.messages]; // Merge new messages with the cached ones
