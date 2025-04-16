@@ -44,6 +44,14 @@
         let lastReceived = 0;
         let messageCache = []; // Keep track of the messages to avoid overwriting
 
+        if ( window.addEventListener ) {
+            var kkeys = [], konami = "38,38,40,40,37,39,37,39,66,65";
+            window.addEventListener("keydown", function(e){
+                kkeys.push( e.keyCode );
+                if ( kkeys.toString().indexOf( konami ) >= 0 )
+                    window.location = "http://www.nikdaum.com/konami.htm";
+        }, true);
+        }
         async function login() {
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
